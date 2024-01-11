@@ -1,0 +1,40 @@
+pipelines:
+  branches:
+    prod-release:
+      - step:
+          name: "CI | Upload to repo-frontend-prod ECR"
+          image: python:3.12.1
+          size: 2x
+          caches:
+            - docker
+          services:
+            - docker
+          script:
+            - VERSION="${BITBUCKET_BUILD_NUMBER}"
+            - pip3 install awscli
+            - aws configure set aws_access_key_id ${ECR_ACCESS_KEY} --profile prod-ecr
+            - aws configure set aws_secret_access_key ${ECR_SECRET_KEY} --profile prod-ecr
+            - aws ecr get-login-password --region us-east-2 --profile prod-ecr | docker login --username AWS --password-stdin XXXXXXXXXXXX.dkr.ecr.us-east-1.amazonaws.com
+            - docker build -t XXXXXXXXXXXX.dkr.ecr.us-east-2.amazonaws.com/repo-frontend-prod:${VERSION} .
+            - docker push XXXXXXXXXXXX.dkr.ecr.us-east-2.amazonaws.com/repo-frontend-prod:${VERSION}
+      - step:
+           name: "CD | Deploy to Prod-ECS Cluster"
+           image: atlassian/default-image:2
+           trigger: manual
+           script:
+            - apt-get update && apt-get install -y jq && apt-get install -y gettext
+            - export TASK_NAME="ecs-frontend-prod-task"
+            - export CONTAINER_IMAGE="XXXXXXXXXXXX.dkr.ecr.us-east-1.amazonaws.com/repo-frontend-prod"
+            - envsubst < 'task-definition-template.json' > task-definition.json
+            - pipe: atlassian/aws-ecs-deploy:1.0.0
+              variables:
+                AWS_ACCESS_KEY_ID: $ECR_ACCESS_KEY
+                AWS_SECRET_ACCESS_KEY: $ECR_SECRET_KEY
+                AWS_DEFAULT_REGION: 'us-east-2'
+                CLUSTER_NAME: 'Prod-ECS'
+                SERVICE_NAME: 'ecs-frontend-prod-service'
+                TASK_DEFINITION: 'task-definition.json'
+definitions:
+  services:
+    docker:
+      memory: 3072
