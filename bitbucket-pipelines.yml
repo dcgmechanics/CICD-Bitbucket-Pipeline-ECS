@@ -14,7 +14,7 @@ pipelines:
             - pip3 install awscli
             - aws configure set aws_access_key_id ${ECR_ACCESS_KEY} --profile prod-ecr
             - aws configure set aws_secret_access_key ${ECR_SECRET_KEY} --profile prod-ecr
-            - aws ecr get-login-password --region us-east-2 --profile prod-ecr | docker login --username AWS --password-stdin XXXXXXXXXXXX.dkr.ecr.us-east-1.amazonaws.com
+            - aws ecr get-login-password --region us-east-2 --profile prod-ecr | docker login --username AWS --password-stdin XXXXXXXXXXXX.dkr.ecr.us-east-2.amazonaws.com
             - docker build -t XXXXXXXXXXXX.dkr.ecr.us-east-2.amazonaws.com/repo-frontend-prod:${VERSION} .
             - docker push XXXXXXXXXXXX.dkr.ecr.us-east-2.amazonaws.com/repo-frontend-prod:${VERSION}
       - step:
@@ -24,7 +24,7 @@ pipelines:
            script:
             - apt-get update && apt-get install -y jq && apt-get install -y gettext
             - export TASK_NAME="ecs-frontend-prod-task"
-            - export CONTAINER_IMAGE="XXXXXXXXXXXX.dkr.ecr.us-east-1.amazonaws.com/repo-frontend-prod"
+            - export CONTAINER_IMAGE="XXXXXXXXXXXX.dkr.ecr.us-east-2.amazonaws.com/repo-frontend-prod"
             - envsubst < 'task-definition-template.json' > task-definition.json
             - pipe: atlassian/aws-ecs-deploy:1.0.0
               variables:
